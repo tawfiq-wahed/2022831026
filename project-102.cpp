@@ -1,9 +1,9 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-const int screenWidth = 500;
+const int screenWidth = 600;
 const int screenHeight = 480;
-const int initialRadius = 50;
+const int initialRadius = 40;
 
 int main(int argc, char *argv[])
 {
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
             }
         }
 
-      
+      SDL_slower(100);
         SDL_UpdateWindowSurface(window); 
         radius++;
 
