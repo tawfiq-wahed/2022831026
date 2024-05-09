@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
                     if (pixelX >= 0 && pixelX < screenWidth && pixelY >= 0 && pixelY < screenHeight)
                     {
                         
-                        pixelBuffer[pixelY * screenWidth + pixelX] = 0xFFFFFF; 
+                        pixelBuffer[pixelY * screenWidth + pixelX] = 0xFFFF; 
                     }
                 }
             }
