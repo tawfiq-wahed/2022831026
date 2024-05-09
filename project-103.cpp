@@ -1,92 +1,153 @@
 #include <SDL2/SDL.h>
-#include <cmath> // for std::sqrt
+#include <iostream>
+using namespace std;
 
-const int SCREEN_WIDTH = 900;
-const int SCREEN_HEIGHT = 900;
-const int CIRCLE_RADIUS = 300;
-const int MOVE_SPEED = 500;
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
 
-// Function to check collision between two circles
-bool isCollision(const SDL_Rect &circle1, const SDL_Rect &circle2)
-{
-    int centerX1 = circle1.x + circle1.w / 2;
-    int centerY1 = circle1.y + circle1.h / 2;
-    int centerX2 = circle2.x + circle2.w / 2;
-    int centerY2 = circle2.y + circle2.h / 2;
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
+bool isRunning;
+Uint32 startTime;
+Uint32 currentTime;
+bool collision = false; // Flag to track collision
 
-    double distance = std::sqrt(std::pow(centerX2 - centerX1, 2) + std::pow(centerY2 - centerY1, 2));
-    return distance <= CIRCLE_RADIUS * 2; // Check if distance is less than or equal to combined radii
+// Moving balls
+int r = 50;
+int x = -2 * r;
+int y = SCREEN_HEIGHT / 2;
+
+// Movable balls
+int R = 50;
+int X = SCREEN_WIDTH / 2;
+int Y = SCREEN_HEIGHT - R;
+
+bool initializeWindow() {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        cout << "Error: SDL initialization failed\nSDL Error: " << SDL_GetError() << endl;
+        isRunning = false;
+        return false;
+    }
+
+    window = SDL_CreateWindow("Collision", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    if (!window) {
+        cout << "Error: Failed to create window\nSDL Error: " << SDL_GetError() << endl;
+        isRunning = false;
+        return false;
+    }
+
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        cout << "Error: Failed to create renderer\nSDL Error: " << SDL_GetError() << endl;
+        isRunning = false;
+        return false;
+    }
+
+    return true;
 }
 
-int main(int argc, char *argv[])
-{
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow("Circle Collision", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-    // Create circles
-    SDL_Rect movingCircle = {0, SCREEN_HEIGHT - CIRCLE_RADIUS * 2, CIRCLE_RADIUS * 2, CIRCLE_RADIUS * 2};
-    SDL_Rect staticCircle = {SCREEN_WIDTH / 2 - CIRCLE_RADIUS, 0, CIRCLE_RADIUS * 2, CIRCLE_RADIUS * 2};
-
-    bool isCollided = false;
-
+void Events() {
     SDL_Event event;
-    bool running = true;
-    while (running)
-    {
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_QUIT)
-            {
-                running = false;
-            }
-            else if (event.type == SDL_KEYDOWN)
-            {
-                switch (event.key.keysym.sym)
-                {
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            isRunning = false;
+        }
+        if (event.type == SDL_KEYDOWN) {
+            switch (event.key.keysym.sym) {
                 case SDLK_UP:
-                    staticCircle.y -= MOVE_SPEED;
-                    break;
-                case SDLK_DOWN:
-                    staticCircle.y += MOVE_SPEED;
+                    if (Y > R) Y -= 10;
                     break;
                 case SDLK_LEFT:
-                    staticCircle.x -= MOVE_SPEED;
+                    if (X > R) X -= 10;
                     break;
                 case SDLK_RIGHT:
-                    staticCircle.x += MOVE_SPEED;
+                    if (X < SCREEN_WIDTH - R) X += 10;
+                    break;
+                case SDLK_DOWN:
+                    if (Y < SCREEN_HEIGHT - R) Y += 10;
                     break;
                 default:
                     break;
-                }
             }
         }
-
-        // Update moving circle position
-        movingCircle.x += MOVE_SPEED;
-
-        // Check for collision
-        isCollided = isCollision(movingCircle, staticCircle);
-
-        // Clear screen
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        // Draw circles with appropriate color based on collision
-        Uint8 r = isCollided ? 255 : 0;
-        Uint8 g = isCollided ? 0 : 255;
-        SDL_SetRenderDrawColor(renderer, r, g, 0, 255);
-
-        // Draw squares representing the circles
-        SDL_RenderDrawRect(renderer, &movingCircle); // Draw moving circle as a square
-        SDL_RenderDrawRect(renderer, &staticCircle); // Draw static circle as a square
-
-        SDL_RenderPresent(renderer);
     }
+}
 
+bool checkCollision() {
+    int d = (x - X) * (x - X) + (y - Y) * (y - Y);
+    int sumRadii = (r + R) * (r + R);
+    return d <= sumRadii;
+}
+
+void increment() {
+    x += 20; // Increase x position at a faster rate
+    if (x >= SCREEN_WIDTH + r) x = -r;
+}
+
+void update() {
+    currentTime = SDL_GetTicks();
+    Uint32 passedTime = currentTime - startTime;
+    if (passedTime >= 16) { // Update approximately every 16 milliseconds (60 FPS)
+        increment();
+        startTime = currentTime;
+
+        // Check for collision after each update
+        collision = checkCollision();
+    }
+    SDL_Delay(16);
+}
+
+void drawFilledCircle(int cx, int cy, int radius) {
+    for (int y = -radius; y <= radius; y++) {
+        for (int x = -radius; x <= radius; x++) {
+            if (x * x + y * y <= radius * radius) {
+                SDL_RenderDrawPoint(renderer, cx + x, cy + y);
+            }
+        }
+    }
+}
+
+void render() {
+    // Clear the screen
+    SDL_SetRenderDrawColor(renderer, 210, 126, 26, 255);
+    SDL_RenderClear(renderer);
+
+    // Draw the balls
+    if (collision) {
+        SDL_SetRenderDrawColor(renderer, 133, 55, 64, 255); // Change color if collision occurred
+    } else {
+        SDL_SetRenderDrawColor(renderer, 36, 48, 60, 255);
+    }
+    drawFilledCircle(x, y, r);
+
+    if (collision) {
+        SDL_SetRenderDrawColor(renderer, 133, 55, 64, 255); // Change color if collision occurred
+    } else {
+        SDL_SetRenderDrawColor(renderer, 36, 48, 60, 255);
+    }
+    drawFilledCircle(X, Y, R);
+
+    // Present the renderer
+    SDL_RenderPresent(renderer);
+}
+
+void clear() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+}
+
+int main(int argc, char** argv) {
+    isRunning = initializeWindow();
+    startTime = SDL_GetTicks();
+
+    while (isRunning) {
+        Events();
+        update();
+        render();
+    }
+
+    clear();
 
     return 0;
 }
