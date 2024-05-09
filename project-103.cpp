@@ -4,7 +4,7 @@
 const int SCREEN_WIDTH = 900;
 const int SCREEN_HEIGHT = 900;
 const int CIRCLE_RADIUS = 300;
-const int MOVE_SPEED = 500000;
+const int MOVE_SPEED = 500;
 
 // Function to check collision between two circles
 bool isCollision(const SDL_Rect &circle1, const SDL_Rect &circle2)
