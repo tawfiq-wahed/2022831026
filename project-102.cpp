@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-const int screenWidth = 640;
+const int screenWidth = 500;
 const int screenHeight = 480;
 const int initialRadius = 50;
 
